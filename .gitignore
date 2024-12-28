@@ -1,4 +1,4 @@
 .venv
 .mypy_cache
-# data/students.json
-# data/groups.json
+data/students.json
+data/groups.json
