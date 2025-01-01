@@ -1,0 +1,12 @@
+{
+  "a": [
+    "a"
+  ],
+  "b": [
+    "b"
+  ],
+  "c": [
+    "c",
+    "add something like this: 'groupname': ['student1', 'student2'] and the student's name should be the same as in the students.json file"
+  ]
+}

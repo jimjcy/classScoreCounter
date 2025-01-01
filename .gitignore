@@ -2,3 +2,4 @@
 .mypy_cache
 data/student.json
 data/group.json
+data/reason.json
