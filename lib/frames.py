@@ -127,9 +127,9 @@ class ScoreFrame(object):
         )
         self.backButton.place(relx=0, rely=0.9, relheight=0.1)
 
-        for i in range(1, len(util.getJsonDada("student")) // 10 + 2):
+        for i in range(1, len(util.getJsonData("students")) // 10 + 2):
             for j in range(1, 11):
-                if (i - 1) * 10 + j > len(util.getJsonDada("student")):
+                if (i - 1) * 10 + j > len(util.getJsonData("students")):
                     break
                 boolvar = tk.BooleanVar()
                 boolvar.set(False)
@@ -182,7 +182,7 @@ class ScoreFrame(object):
         self.reasonCombobox = ttk.Combobox(
             self.scoreFrame, textvariable=self.reasonText
         )
-        self.reasonCombobox["values"] = util.getJsonDada("reason")["reasons"]
+        self.reasonCombobox["values"] = util.getJsonData("reasons")["reasons"]
         self.reasonCombobox.place(relx=0.2, rely=0.4, relwidth=0.8)
         self.reasonCombobox.current(0)
 
@@ -245,7 +245,7 @@ class ScoreFrame(object):
     
     def ok(self) -> None:
         scoresJson: dict = {}
-        infoJson: dict = util.getJsonDada("info")
+        infoJson: dict = util.getJsonData("info")
         __scoresIO = open(
             pathlib.Path(os.getcwd()).joinpath("data").joinpath("scores.json"),
             "r",
@@ -255,7 +255,7 @@ class ScoreFrame(object):
             scoresJson = json.loads(__scoresIO.read())
         except json.decoder.JSONDecodeError:
             scoresJson = {}
-            for i in range(1, len(util.getJsonDada("student")) + 1):
+            for i in range(1, len(util.getJsonData("students")) + 1):
                 scoresJson[str(i)] = 0
         __scoresIO.close()
         __scoresIO = open(
@@ -268,7 +268,7 @@ class ScoreFrame(object):
             "w",
             encoding="utf-8",
         )
-        for i in range(1, len(util.getJsonDada("student")) + 1):
+        for i in range(1, len(util.getJsonData("students")) + 1):
             if self.checkbuttonStatus[str(i)].get():
                 if self.scoreSymbol.get() == "+":
                     scoresJson[str(i)] += self.scoreValue.get()

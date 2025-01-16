@@ -1,87 +1,95 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import io
 import os
 import pathlib
 import json
+import logging
 from typing import *
 
+dataPath: pathlib.Path = pathlib.Path(os.getcwd()).joinpath("data")
+
+
+def createFile(file: Union[str, pathlib.Path]) -> None:
+    if pathlib.Path(file).exists() == False:
+        open(file, "w", encoding="utf-8").close()
+
+
+def initFolder() -> None:
+    if dataPath.exists() == False:
+        os.mkdir(dataPath)
+    if dataPath.joinpath("students.json").exists() == False:
+        createFile(dataPath.joinpath("students.json"))
+    if dataPath.joinpath("groups.json").exists() == False:
+        createFile(dataPath.joinpath("groups.json"))
+    if dataPath.joinpath("reasons.json").exists() == False:
+        createFile(dataPath.joinpath("reasons.json"))
+    if dataPath.joinpath("scores.json").exists() == False:
+        createFile(dataPath.joinpath("scores.json"))
+    if dataPath.joinpath("info.json").exists() == False:
+        createFile(dataPath.joinpath("info.json"))
+
+
+initFolder()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s %(levelname)s]%(name)s $ %(message)s",
+)
+formatter = logging.Formatter("[%(asctime)s]%(name)s %(levelname)s %(message)s")
+rootLoggger = logging.getLogger("root")
+fileHandler = logging.FileHandler(
+    dataPath.joinpath("log.log"), encoding="utf-8"
+)
+fileHandler.setFormatter(formatter)
+fileHandler.setLevel(logging.INFO)
+rootLoggger.setLevel(logging.INFO)
+rootLoggger.addHandler(fileHandler)
+
+rootLoggger.info("Logger initialized.")
+rootLoggger.info("File created.")
 
 Vars = Union[tk.BooleanVar, tk.StringVar, tk.IntVar, tk.DoubleVar]
-studentsJson: dict = {}
-groupsJson: dict = {}
-reasonsJson: dict = {}
-infoJson: dict = {}
-scoresJson: dict = {}
+jsonData: Dict[str, Union[dict, Dict[str, Union[str, int, List[str]]]]] = {
+    "students": {},
+    "groups": {},
+    "reasons": {},
+    "scores": {},
+    "info": {},
+}
 
 
-def getJsonDada(
-    name: Literal["student", "group", "reason", "score", "info", "all"]
-) -> Union[Tuple[dict, dict, dict, dict, dict], dict]:
-    global studentsJson, groupsJson, reasonsJson, scoresJson, infoJson
-    if studentsJson and groupsJson and reasonsJson:
-        if name == "student":
-            return studentsJson
-        elif name == "group":
-            return groupsJson
-        elif name == "reason":
-            return reasonsJson
-        elif name == "score":
-            return scoresJson
-        elif name == "info":
-            return infoJson
-        else:
-            return studentsJson, groupsJson, reasonsJson, scoresJson, infoJson
+def __readJsonData() -> None:
+    global jsonData, rootLoggger
+    rootLoggger.info("Reading JSON data.")
     try:
-        __studentsIO = open(
-            pathlib.Path(os.getcwd()).joinpath("data").joinpath("students.json"),
-            "r",
-            encoding="utf-8",
-        )
-        studentsJson = json.loads(__studentsIO.read())
-        __groupsIO = open(
-            pathlib.Path(os.getcwd()).joinpath("data").joinpath("groups.json"),
-            "r",
-            encoding="utf-8",
-        )
-        groupsJson = json.loads(__groupsIO.read())
-        __reasonsIO = open(
-            pathlib.Path(os.getcwd()).joinpath("data").joinpath("reasons.json"),
-            "r",
-            encoding="utf-8",
-        )
-        reasonsJson = json.loads(__reasonsIO.read())
-        __scoresIO = open(
-            pathlib.Path(os.getcwd()).joinpath("data").joinpath("scores.json"),
-            "r",
-            encoding="utf-8",
-        )
-        scoresJson = json.loads(__scoresIO.read())
-        __infoIO = open(
-            pathlib.Path(os.getcwd()).joinpath("data").joinpath("info.json"),
-            "r",
-            encoding="utf-8",
-        )
-        infoJson = json.loads(__infoIO.read())
-        __studentsIO.close()
-        __groupsIO.close()
-        __reasonsIO.close()
-        __scoresIO.close()
-        __infoIO.close()
+        for i in jsonData:
+            __io = open(
+                pathlib.Path(os.getcwd()).joinpath("data").joinpath(f"{i}.json"),
+                "r",
+                encoding="utf-8",
+            )
+            jsonData[i] = json.loads(__io.read())
+            __io.close()
+        rootLoggger.info("JSON data read.")
     except json.decoder.JSONDecodeError:
-        studentsJson = groupsJson = reasonsJson = scoresJson = infoJson = {}
-    if name == "student":
-        return studentsJson
-    elif name == "group":
-        return groupsJson
-    elif name == "reason":
-        return reasonsJson
-    elif name == "score":
-        return scoresJson
-    elif name == "info":
-        return infoJson
+        jsonData = {
+            "students": {},
+            "groups": {},
+            "reasons": {},
+            "scores": {},
+            "info": {},
+        }
+        rootLoggger.error("JSON data read failed.")
+
+
+def getJsonData(
+    name: Literal["students", "groups", "reasons", "scores", "info", "all"]
+) -> Union[Dict[str, Union[dict, Dict[str, Union[str, int, List[str]]]]], dict]:
+    __readJsonData()
+    if name == "all":
+        return jsonData
     else:
-        return studentsJson, groupsJson, reasonsJson, scoresJson, infoJson
+        return jsonData[name]
 
 
 def getCallback(func: Callable, *args, **kwargs) -> Callable:
@@ -97,7 +105,7 @@ def createCheckButton(
     onVar: Any = True,
     offVar: Any = False,
     *args,
-    **kwargs
+    **kwargs,
 ) -> ttk.Checkbutton:
     """Return a CheckButton with the given text and commands."""
     return ttk.Checkbutton(
@@ -108,7 +116,7 @@ def createCheckButton(
         offvalue=offVar,
         variable=var,
         *args,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -131,7 +139,5 @@ __all__ = [
     "createCheckButton",
     "toFrame",
     "Vars",
-    "studentsJson",
-    "groupsJson",
-    "reasonsJson",
+    "jsonData"
 ]

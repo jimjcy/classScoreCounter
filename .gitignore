@@ -1,7 +1,4 @@
 .venv
 .mypy_cache
-data/student.json
-data/group.json
-data/reason.json
 test.cpp
 test.py
