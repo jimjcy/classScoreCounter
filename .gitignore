@@ -2,3 +2,6 @@
 .mypy_cache
 test.cpp
 test.py
+test.json
+test.exe
+data/log.log

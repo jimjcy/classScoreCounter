@@ -9,92 +9,117 @@ from typing import *
 dataPath: pathlib.Path = pathlib.Path(os.getcwd()).joinpath("data")
 
 
-def createFile(file: Union[str, pathlib.Path]) -> None:
-    if pathlib.Path(file).exists() == False:
-        open(file, "w", encoding="utf-8").close()
-
-
-def initFolder() -> None:
+def initFolder() -> bool:
+    isinitalized = True
     if dataPath.exists() == False:
         os.mkdir(dataPath)
+        isinitalized = False
     if dataPath.joinpath("students.json").exists() == False:
-        createFile(dataPath.joinpath("students.json"))
+        io = open(dataPath.joinpath("students.json"), "w", encoding='utf-8')
+        io.write("{}")
+        io.close()
+        isinitalized = False
     if dataPath.joinpath("groups.json").exists() == False:
-        createFile(dataPath.joinpath("groups.json"))
+        io = open(dataPath.joinpath("groups.json"), "w", encoding='utf-8')
+        io.write("{}")
+        io.close()
     if dataPath.joinpath("reasons.json").exists() == False:
-        createFile(dataPath.joinpath("reasons.json"))
+        io = open(dataPath.joinpath("reasons.json"), "w", encoding='utf-8')
+        io.write("{}")
+        io.close()
     if dataPath.joinpath("scores.json").exists() == False:
-        createFile(dataPath.joinpath("scores.json"))
+        io = open(dataPath.joinpath("scores.json"), "w", encoding='utf-8')
+        io.write("{}")
+        io.close()
     if dataPath.joinpath("info.json").exists() == False:
-        createFile(dataPath.joinpath("info.json"))
+        io = open(dataPath.joinpath("info.json"), "w", encoding='utf-8')
+        io.write("{\"data\": []}")
+        io.close()
+    return isinitalized
 
-
-initFolder()
 
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s %(levelname)s]%(name)s $ %(message)s",
 )
 formatter = logging.Formatter("[%(asctime)s]%(name)s %(levelname)s %(message)s")
-rootLoggger = logging.getLogger("root")
-fileHandler = logging.FileHandler(
-    dataPath.joinpath("log.log"), encoding="utf-8"
-)
+rootLogger = logging.getLogger("root")
+fileHandler = logging.FileHandler(pathlib.Path(os.getcwd()).joinpath("log.log"), encoding="utf-8")
 fileHandler.setFormatter(formatter)
 fileHandler.setLevel(logging.INFO)
-rootLoggger.setLevel(logging.INFO)
-rootLoggger.addHandler(fileHandler)
+rootLogger.setLevel(logging.INFO)
+rootLogger.addHandler(fileHandler)
 
-rootLoggger.info("Logger initialized.")
-rootLoggger.info("File created.")
+rootLogger.info("Logger initialized.")
 
 Vars = Union[tk.BooleanVar, tk.StringVar, tk.IntVar, tk.DoubleVar]
-jsonData: Dict[str, Union[dict, Dict[str, Union[str, int, List[str]]]]] = {
-    "students": {},
-    "groups": {},
-    "reasons": {},
-    "scores": {},
-    "info": {},
+
+
+class Json(object):
+    """A class to handle the json data."""
+
+    def __init__(self, path: Union[str, pathlib.Path], encoding: str = "utf-8") -> None:
+        self.path = path
+        self.encoding = encoding
+        self.data: dict = {}
+        self.logger = rootLogger.getChild(f"json-{self.path}")
+        self.read()
+
+    def __getitem__(self, key: str) -> Any:
+        return self.data[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.data[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.data[key]
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __iter__(self) -> Iterator:
+        return iter(self.data)
+
+    def read(self) -> None:
+        try:
+            self.logger.info("Reading json file.")
+            self.io = open(self.path, "r", encoding=self.encoding)
+            self.data = json.loads(self.io.read())
+            self.io.close()
+        except (FileNotFoundError, FileExistsError):
+            self.logger.error("Error reading json file.")
+        except json.JSONDecodeError:
+            self.logger.error("Error decoding json file.")
+        finally:
+            self.logger.info("Json file read.")
+
+    def write(self) -> None:
+        self.logger.info("Writing json file.")
+        self.io = open(self.path, "w", encoding=self.encoding)
+        self.io.write(str(json.dumps(self.data, indent=4, ensure_ascii=False)))
+        self.io.close()
+        self.logger.info("Json file wrote.")
+
+    def get(self) -> dict:
+        return self.data
+
+
+jsons: Dict[str, Json] = {
+    "students": Json(dataPath.joinpath("students.json")),
+    "groups": Json(dataPath.joinpath("groups.json")),
+    "reasons": Json(dataPath.joinpath("reasons.json")),
+    "scores": Json(dataPath.joinpath("scores.json")),
+    "info": Json(dataPath.joinpath("info.json")),
 }
-
-
-def __readJsonData() -> None:
-    global jsonData, rootLoggger
-    rootLoggger.info("Reading JSON data.")
-    try:
-        for i in jsonData:
-            __io = open(
-                pathlib.Path(os.getcwd()).joinpath("data").joinpath(f"{i}.json"),
-                "r",
-                encoding="utf-8",
-            )
-            jsonData[i] = json.loads(__io.read())
-            __io.close()
-        rootLoggger.info("JSON data read.")
-    except json.decoder.JSONDecodeError:
-        jsonData = {
-            "students": {},
-            "groups": {},
-            "reasons": {},
-            "scores": {},
-            "info": {},
-        }
-        rootLoggger.error("JSON data read failed.")
 
 
 def getJsonData(
     name: Literal["students", "groups", "reasons", "scores", "info", "all"]
-) -> Union[Dict[str, Union[dict, Dict[str, Union[str, int, List[str]]]]], dict]:
-    __readJsonData()
+) -> Union[Dict[str, Json], Json]:
     if name == "all":
-        return jsonData
+        return jsons
     else:
-        return jsonData[name]
-
-
-def getCallback(func: Callable, *args, **kwargs) -> Callable:
-    """Return a Callback function for the given function with the given arguments."""
-    return lambda: func(*args, **kwargs)
+        return jsons[name]
 
 
 def createCheckButton(
@@ -122,7 +147,7 @@ def createCheckButton(
 
 def toFrame(
     master: tk.Tk,
-    fromFrame: Union[tk.Tk, ttk.Frame, list],
+    fromFrame: tk.Widget,
     toFrameClass: Callable[[tk.Tk], None],
 ) -> None:
     """Destroy current frame and create a new frame"""
@@ -134,10 +159,4 @@ def toFrame(
     toFrameClass(master)
 
 
-__all__ = [
-    "getCallback",
-    "createCheckButton",
-    "toFrame",
-    "Vars",
-    "jsonData"
-]
+__all__ = ["createCheckButton", "toFrame", "Vars", "Json", "getJsonData", "jsons"]
