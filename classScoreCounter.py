@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import lib.frames as frames
+import lib.datas as datas
 import lib.util as util
 
-if __name__ == '__main__':
-    initFolderLogger = util.rootLogger.getChild("initFolder")
+if __name__ == "__main__":
+    initFolderLogger = datas.rootLogger.getChild("initFolder")
     if util.initFolder() == False:
-        initFolderLogger.error("The folder is not initialized, creating the folder and files")
+        initFolderLogger.error(
+            "The folder is not initialized, creating the folder and files"
+        )
         frames.createFileWindow().mainloop()
         initFolderLogger.info("The folder is initialized.")
     else:

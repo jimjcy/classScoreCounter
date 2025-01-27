@@ -1,18 +1,17 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, constants
 from typing import *
 import functools
-import pathlib
-import os
-import json
 import time
 
 try:
     import util
+    import datas
 except ModuleNotFoundError:
     from . import util
+    from . import datas
 
-rootLogger = util.rootLogger
+rootLogger = datas.rootLogger
 
 
 class initWindow(tk.Tk):
@@ -87,17 +86,10 @@ class mainFrame(object):
 
         self.searchButton = ttk.Button(
             self.frame,
-            text="查询",
-            command=lambda: util.toFrame(self.master, self.frame, searchFrame),
+            text="查询/展示",
+            command=lambda: util.toFrame(self.master, self.frame, showFrame),
         )
         self.searchButton.place(relx=0.6, rely=0.1, relwidth=0.2, relheight=0.1)
-
-        self.rankButton = ttk.Button(
-            self.frame,
-            text="排行榜",
-            command=lambda: util.toFrame(self.master, self.frame, rankFrame),
-        )
-        self.rankButton.place(relx=0.2, rely=0.3, relwidth=0.2, relheight=0.1)
 
         self.splitLabel = ttk.Label(
             self.frame,
@@ -155,7 +147,7 @@ class ScoreFrame(object):
         self.frameName.place(relx=0.4, rely=0, relheight=0.1)
 
         self.studentNotebook = ttk.Notebook(self.master)
-        self.studentNotebook.place(relx=0, rely=0, relwidth=0.6, relheight=1)
+        self.studentNotebook.place(relx=0, rely=0, relheight=1, relwidth=0.6)
 
         self.studentNumberFrame = ttk.Frame(self.master)
         self.studentNameFrame = ttk.Frame(self.master)
@@ -334,7 +326,10 @@ class ScoreFrame(object):
     ) -> None:
         if toIndex is None:
             toIndex = index
-        if (self.checkbuttonNameStatus["all"].get() or self.checkbuttonNumberStatus["all"].get()) and toIndex != "all":
+        if (
+            self.checkbuttonNameStatus["all"].get()
+            or self.checkbuttonNumberStatus["all"].get()
+        ) and toIndex != "all":
             self.checkbuttonNameStatus["all"].set(False)
             self.checkbuttonNumberStatus["all"].set(False)
         if fromFrame == "number":
@@ -353,14 +348,19 @@ class ScoreFrame(object):
             )
         if toIndex != "all":
             self.logger.info(
-                "Set " + str(index) + " to " + str(self.checkbuttonNumberStatus[str(index)].get())
+                "Set "
+                + str(index)
+                + " to "
+                + str(self.checkbuttonNumberStatus[str(index)].get())
             )
 
     def setAll(self, fromFrame: Literal["number", "name"]) -> None:
         for i in range(1, len(self.checkbuttonNumberDict)):
             self.setValue(fromFrame, str(i), "all")
         self.setValue(fromFrame, "all", "all")
-        self.logger.info(f"Set all students to {str(self.checkbuttonNumberStatus['all'].get())}")
+        self.logger.info(
+            f"Set all students to {str(self.checkbuttonNumberStatus['all'].get())}"
+        )
 
     def setReasonMode(self) -> None:
         if self.reasonMode.get() == "json":
@@ -376,7 +376,6 @@ class ScoreFrame(object):
             self.reasonEntry.config(state="disabled")
             self.reasonText.set("无")
         self.logger.info("reason mode changed to " + self.reasonMode.get())
-        
 
     def setScoreMode(self) -> None:
         if self.scoreMode.get() == "addorsub":
@@ -391,9 +390,10 @@ class ScoreFrame(object):
             self.scoreEntry.config(state="normal")
         self.logger.info("score mode changed to " + self.scoreMode.get())
 
-
     def ok(self) -> None:
-        self.logger.info(f"OK button clicked, score mode: {self.scoreMode.get()}, reason mode: {self.reasonMode.get()}, number: {self.scoreValue.get()}")
+        self.logger.info(
+            f"OK button clicked, score mode: {self.scoreMode.get()}, reason mode: {self.reasonMode.get()}, number: {self.scoreValue.get()}"
+        )
         scoresJson = util.getJsonData("scores")
         infoJson = util.getJsonData("info")
         for i in range(1, len(util.getJsonData("students")) + 1):
@@ -406,10 +406,13 @@ class ScoreFrame(object):
                     infoJson["data"].append(
                         {
                             "学号": str(i),
-                            "分数变化": self.scoreSymbol.get() + str(self.scoreValue.get()),
+                            "分数变化": self.scoreSymbol.get()
+                            + str(self.scoreValue.get()),
                             "当前分数": scoresJson[str(i)],
                             "原因": self.reasonText.get(),
-                            "时间": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                            "时间": time.strftime(
+                                "%Y-%m-%d %H:%M:%S", time.localtime()
+                            ),
                         }
                     )
                 else:
@@ -420,7 +423,9 @@ class ScoreFrame(object):
                             "分数变化": f"直接修改为{self.scoreEntry.get()}",
                             "当前分数": scoresJson[str(i)],
                             "原因": self.reasonText.get(),
-                            "时间": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                            "时间": time.strftime(
+                                "%Y-%m-%d %H:%M:%S", time.localtime()
+                            ),
                         }
                     )
         scoresJson.write()
@@ -429,227 +434,59 @@ class ScoreFrame(object):
         self.logger.info("score operation has done!")
 
 
-class editScoreFrame(object): ...
+class showFrame(object):
 
+    def __init__(self, master):
+        self.master = master
 
-#     def __init__(self, master):
-#         self.master = master
-#         self.win = Frame(self.master)
-#         self.win.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.showNotebook = ttk.Notebook(self.master)
+        self.showNotebook.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-#         label1 = Label(self.win, text='修改分数界面')
-#         label1.pack()
+        self.dataFrame = ttk.Frame(self.showNotebook)
+        self.rankFrame = ttk.Frame(self.showNotebook)
+        self.infoFrame = ttk.Frame(self.showNotebook)
 
-#         label2 = Label(self.win, text='学号')
-#         label2.place(relx=0, rely=0.1)
+        self.showNotebook.add(self.dataFrame, text="数据")
+        self.showNotebook.add(self.rankFrame, text="排行榜")
+        self.showNotebook.add(self.infoFrame, text="分数记录")
 
-#         label3 = Label(self.win, text='修改的分数')
-#         label3.place(relx=0.7, rely=0.1)
+        # ----------------------------------------------------------------------------
 
-#         label4 = Label(self.win, text='修改分数原因')
-#         label4.place(relx=0.7, rely=0.4)
+        self.dataScrollbar = ttk.Scrollbar(self.dataFrame)
+        self.dataScrollbar.place(relx=0.97, rely=0, relwidth=0.03, relheight=1)
 
-#         self.csbv_dict = {}
-#         self.csb_dict = {}
+        self.dataTreeView = ttk.Treeview(
+            self.dataFrame,
+            yscrollcommand=self.dataScrollbar.set,
+            columns=("id", "name", "score"),
+            show="headings",
+            displaycolumns="#all",
+        )
+        self.dataTreeView.place(relx=0, rely=0, relwidth=0.97, relheight=1)
 
-#         self.csb_dict['1'] = Checkbutton(self.win, text='1', command=lambda: self.set_value('1'))
+        self.dataScrollbar.config(command=self.dataTreeView.yview)
 
-#         entry1 = Entry(self.win)
-#         entry1.place(relx=0.7, rely=0.2, relwidth=0.3)
+        self.dataTreeView.heading("id", text="学号")
+        self.dataTreeView.heading("name", text="姓名")
+        self.dataTreeView.heading("score", text="分数")
 
-#         entry2 = Entry(self.win)
-#         entry2.place(relx=0.7, rely=0.5, relwidth=0.3)
+        self.dataTreeView.column("id", width=100, anchor=constants.CENTER)
+        self.dataTreeView.column("name", width=100, anchor=constants.CENTER)
+        self.dataTreeView.column("score", width=100, anchor=constants.CENTER)
 
-#         button1 = Button(self.win, text='返回', command=self.back)
-#         button1.place(relx=0, rely=0.9, relwidth=0.2)
+        for i in range(1, len(util.getJsonData("students")) + 1):
+            self.dataTreeView.insert(
+                "",
+                constants.END,
+                values=(
+                    i,
+                    util.getJsonData("students")[str(i)],
+                    util.getJsonData("scores")[str(i)],
+                ),
+            ) 
 
-#         button2 = Button(self.win, text='确定', command=lambda: self.yes(entry1, entry2))
-#         button2.place(relx=0.8, rely=0.9, relwidth=0.2)
+        # ----------------------------------------------------------------------------
 
-#     # def back(self):
-#     #     self.win.destroy()
-#     #     main_window(self.master)
-
-#     # def set_value(self, value):
-#     #     if self.csbv_dict[value] == 0:
-#     #         self.csbv_dict[value] = 1
-#     #     else:
-#     #         self.csbv_dict[value] = 0
-#     #     print(self.csbv_dict[value])
-
-#     # def set_all(self):
-#     #     all_value = self.csbv_dict['all']
-#     #     if all_value == 0:
-#     #         for num in self.csb_dict.keys():
-#     #             self.csb_dict[num].config(state=DISABLED)
-#     #         self.csb_dict['all'].config(state=NORMAL)
-#     #         self.csbv_dict['all'] = 1
-#     #     else:
-#     #         for num in self.csb_dict.keys():
-#     #             self.csb_dict[num].config(state=NORMAL)
-#     #         self.csbv_dict['all'] = 0
-
-#     # def yes(self, entry1, entry2):
-#     #     global class_info
-#     #     get_num = int(entry1.get())
-#     #     get_info = entry2.get()
-#     #     if self.csbv_dict['all'] == 1:
-#     #         for nums in self.csbv_dict.keys():
-#     #             if nums != 'all':
-#     #                 class_info[nums]['总分'] = get_num
-#     #                 time = ti.localtime()
-#     #                 class_info[nums]['今日加减分数原因'].append(f'{time[0]}年{time[1]}月{time[2]}日 {time[3]}时{time[4]}分{time[5]}秒' + get_info + ' 修改分数为{}'.format(str(get_num)))
-#     #             else:
-#     #                 pass
-#     #     else:
-#     #         for nums in self.csbv_dict.keys():
-#     #             if nums != 'all' and self.csbv_dict[nums] == 1:
-#     #                 class_info[nums]['总分'] = get_num
-#     #                 time = ti.localtime()
-#     #                 class_info[nums]['今日加减分数原因'].append(f'{time[0]}年{time[1]}月{time[2]}日 {time[3]}时{time[4]}分{time[5]}秒' + get_info + ' 修改分数为{}'.format(str(get_num)))
-#     #             else:
-#     #                 pass
-#     #     user_name = getusername.getuser()
-#     #     with open(file=r'C:\Users\{}\.class\class_info.json'.format(user_name), mode='w', encoding='utf-8') as f:
-#     #         f.write(str(class_info))
-#     #         f.close()
-#     #     showinfo(title='提示', message='修改分数成功！')
-
-
-class searchFrame(object): ...
-
-
-#     def __init__(self, master):
-#         self.master = master
-#         self.win = Frame(self.master)
-#         self.win.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-#         label1 = Label(self.win, text='查询分数界面')
-#         label1.pack()
-
-#         label2 = Label(self.win, text='输入学号')
-#         label2.place(relx=0, rely=0.1)
-
-#         entry1 = Entry(self.win)
-#         entry1.place(relx=0.2, rely=0.1, relwidth=0.6)
-
-#         text1 = Text(self.win)
-#         text1.place(relx=0, rely=0.2, relwidth=1, relheight=0.7)
-#         text1.delete(0.0, END)
-#         for key, value in class_info.items():
-#             if key != 'time':
-#                 text1.insert(END, key + str(value) + '\n')
-
-#         button1 = Button(self.win, text='查询', command=lambda: self.search(entry1, text1))
-#         button1.place(relx=0.8, rely=0.1, relwidth=0.2)
-
-#         button2 = Button(self.win, text='返回', command=self.back)
-#         button2.place(relx=0, rely=0.9, relwidth=0.2)
-
-#     # def back(self):
-#     #     self.win.destroy()
-#     #     main_window(self.master)
-
-#     # def search(self, entry1, text1):
-#     #     get_num = entry1.get()
-#     #     if get_num != '':
-#     #         for nums in class_info.keys():
-#     #             if nums == get_num:
-#     #                 text1.delete(0.0, END)
-#     #                 text1.insert(END, class_info[nums])
-#     #                 break
-#     #     else:
-#     #         text1.delete(0.0, END)
-#     #         for key, value in class_info.items():
-#     #             if key != 'time':
-#     #                 text1.insert(END, key + str(value) + '\n')
-
-
-class rankFrame(object): ...
-
-
-#     def __init__(self, master):
-#         self.master = master
-#         self.win = Frame(self.master)
-#         self.win.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-#         label1 = Label(self.win, text='排行榜')
-#         label1.pack()
-
-#         num_list = []
-#         for num in range(1, 51):
-#             num_list.append(str(num))
-
-#         score_list = []
-#         for num in range(1, 51):
-#             if num in [4, 20, 26, 33, 46]:
-#                 score_list.append(0)
-#             else:
-#                 score_list.append(class_info[str(num)]['总分'])
-
-#         pack_list = list(zip(num_list, score_list))
-#         print(pack_list)
-
-#         for i in range(len(pack_list) - 1):
-#             for j in range(len(pack_list) - i - 1):
-#                 if pack_list[j][1] < pack_list[j + 1][1]:
-#                     pack_list[j], pack_list[j + 1] = pack_list[j + 1], pack_list[j]
-#         print(pack_list)
-
-#         text1 = Text(self.win)
-#         text1.place(relx=0, rely=0.2, relwidth=1, relheight=0.7)
-
-#         for i in range(len(pack_list)):
-#             if pack_list[i][0] in ['4', '20', '26', '33', '46', 'time']:
-#                 pass
-#             else:
-#                 text1.insert(END, '第{}名：'.format(i + 1) + pack_list[i][0] + '号' + str(class_info[pack_list[i][0]]) + '\n')
-
-#         label2 = Label(self.win, text='输入字符（本查找为范围性查找）')
-#         label2.place(relx=0, rely=0.1, relwidth=0.3)
-
-#         entry1 = Entry(self.win)
-#         entry1.place(relx=0.3, rely=0.1, relwidth=0.5)
-
-#         button1 = Button(self.win, text='查询', command=lambda: self.search(text1, entry1))
-#         button1.place(relx=0.8, relwidth=0.2, rely=0.1)
-
-#         button2 = Button(self.win, text='返回', command=self.back)
-#         button2.place(relx=0, rely=0.9, relwidth=0.2)
-
-#         button3 = Button(self.win, text='导出', command=lambda: self.out(pack_list))
-#         button3.place(relx=0.8, rely=0.9, relwidth=0.2)
-
-#     # def back(self):
-#     #     self.win.destroy()
-#     #     main_window(self.master)
-
-#     # def out(self, pack_list):
-#     #     file = asksaveasfilename(title='导出文件', initialdir='C:\\', filetypes=[('txt文本文档', '*.txt'), ('excel（暂时不支持）', '*.xlsx'), ('全部文件', '*.*')], defaultextension='*.txt')
-
-#     #     if file:
-#     #         with open(file=file, mode='a+', encoding='utf-8') as f:
-#     #             for i in range(len(pack_list)):
-#     #                 if pack_list[i][0] in ['4', '20', '26', '33', '46', 'time']:
-#     #                     pass
-#     #                 else:
-#     #                     f.write(pack_list[i][0] + '的总分是：{}，今日加减分数是：{}，今日加减分数原因是：{}\n'.format(str(class_info[pack_list[i][0]]['总分']), str(class_info[pack_list[i][0]]['加减分数']), str(class_info[pack_list[i][0]]['今日加减分数原因'])))
-#     #         showinfo(title='提示', message='导出成功！')
-
-#     # def search(self, text1, entry1):
-#     #     text_temp = text1.get(0.0, END)
-#     #     entry_text = entry1.get()
-#     #     text = text_temp.split('\n')
-#     #     search_list = []
-#     #     if entry_text == '':
-#     #         pass
-#     #     else:
-#     #         for i in range(len(text)):
-#     #             if entry_text in text[i]:
-#     #                 search_list.append(text[i])
-#     #     text1.delete(0.0, END)
-#     #     for item in search_list:
-#     #         text1.insert(END, item + '\n')
 
 
 class randomStudentFrame(object): ...
@@ -661,4 +498,21 @@ class searchStudentFrame(object): ...
 class timerFrame(object): ...
 
 
-class aboutFrame(object): ...
+class aboutFrame(object): 
+    def __init__(self, master):
+        self.master = master
+        
+        self.frame = ttk.Frame(self.master)
+        self.frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        self.aboutLabel = ttk.Label(self.frame, text="作者：小井井\n版本：v.0.4\n协议：MIT\n仓库地址：https://github.com/jimjcy/classScoreCounter")
+        self.aboutLabel.pack()
+
+        self.backButton = ttk.Button(self.frame, text="返回", command=lambda: util.toFrame(self.master, self.frame, mainFrame))
+        self.backButton.pack()
+
+        self.image = tk.PhotoImage(file=datas.dataPath.joinpath("icon.png"))
+        self.imageLabel = ttk.Label(self.frame, image=self.image)
+        self.imageLabel.pack()
+
+        rootLogger.info("About frame initialized")
